@@ -1,0 +1,67 @@
+---
+ apiVersion: apps/v1
+ kind: Deployment
+ metadata:
+   name: gitlab #name of RS
+ spec:
+#   replicas: 1
+   selector:  #The pod selector determining what pods the RC is operating on
+     matchLabels:
+       app: gitlab
+
+   replicas: 1 # tells deployment to run 2 pods matching the template
+   strategy:
+     type: RollingUpdate
+     rollingUpdate:
+       maxSurge: 1
+       maxUnavailable: 1
+
+   template: # The pod template for creating new pods | POD LEVEL
+     metadata:
+       labels:
+         app: gitlab # What label pod will have
+     spec:
+#       affinity: # Here we make pod on node affinity. Label node "name=kuber2"
+#        nodeAffinity:
+#          requiredDuringSchedulingIgnoredDuringExecution:
+#            nodeSelectorTerms:
+#            - matchExpressions:
+#              - key: name
+#                operator: In
+#                values:
+#                - kuber2
+       nodeSelector:
+         memory: 5Gb
+       containers: # CONTAINER LEVEL
+       - name: gitlab
+         #image: gitlab/gitlab-ce:12.3.1-ce.0
+         image: gitlab/gitlab-ce:13.4.3-ce.0
+         imagePullPolicy: Always
+         resources:
+           limits:
+             cpu: "4"
+             memory: "4096Mi"
+           requests:
+             cpu: "4"
+             memory: "4096Mi"
+         ports:
+         - containerPort: 80
+
+         volumeMounts:
+         - mountPath: /etc/gitlab
+           name: config-vol
+         - mountPath: /var/log/gitlab
+           name: log-vol
+         - mountPath: /var/opt/gitlab
+           name: var-opt-vol
+
+       volumes:
+       - name: config-vol
+         hostPath:
+           path: /mnt/nfs/gitlab/config
+       - name: log-vol
+         hostPath:
+           path: /mnt/nfs/gitlab/logs
+       - name: var-opt-vol
+         hostPath:
+           path: /mnt/nfs/gitlab/data

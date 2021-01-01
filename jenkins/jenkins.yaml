@@ -1,0 +1,54 @@
+---
+ apiVersion: apps/v1
+ kind: Deployment
+ metadata:
+   name: jenkins #name of RS
+ spec:
+#   replicas: 1
+   selector:  #The pod selector determining what pods the RC is operating on
+     matchLabels:
+       app: jenkins
+
+   replicas: 1 # tells deployment to run 2 pods matching the template
+   strategy:
+     type: RollingUpdate
+     rollingUpdate:
+       maxSurge: 1
+       maxUnavailable: 1
+
+   template: # The pod template for creating new pods | POD LEVEL
+     metadata:
+       labels:
+         app: jenkins # What label pod will have
+     spec:
+#       affinity: # Here we make pod on node affinity. Label node "name=k8s04"
+#        nodeAffinity:
+#          requiredDuringSchedulingIgnoredDuringExecution:
+#            nodeSelectorTerms:
+#            - matchExpressions:
+#              - key: name
+#                operator: In
+#                values:
+#                - k8s04
+       containers: # CONTAINER LEVEL
+       - name: jenkins
+         image: kukudu/jenkins:latest
+         imagePullPolicy: Always
+         ports:
+         - containerPort: 8080
+         volumeMounts: # here we mount a volumes
+         - mountPath: /var/jenkins_home
+           name: volume-1
+         - mountPath: /var/run/docker.sock
+           name: docker-sock
+           #         - mountPath: /usr/share/jenkins
+           #           name: volume-2
+
+       volumes: # this volumes
+       - name: volume-1
+         hostPath:
+           path: /mnt/nfs/jenkins/jenkins_home
+           #path: /opt/jenkins/jenkins_home
+       - name: docker-sock
+         hostPath:
+           path: /var/run/docker.sock

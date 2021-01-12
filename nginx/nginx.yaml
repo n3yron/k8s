@@ -1,0 +1,62 @@
+---
+ apiVersion: apps/v1
+ kind: Deployment
+ metadata:
+   name: nginx #name of RS
+ spec:
+   replicas: 2
+   selector:  #The pod selector determining what pods the RC is operating on
+     matchLabels:
+       app: nginx
+
+   replicas: 1 # tells deployment to run 2 pods matching the template
+   strategy:
+     type: RollingUpdate
+     rollingUpdate:
+       maxSurge: 1
+       maxUnavailable: 1
+
+   template: # The pod template for creating new pods | POD LEVEL
+     metadata:
+       labels:
+         app: nginx # What label pod will have
+     spec:
+#       affinity: # Here we make pod on node affinity. Label node "name=kuber2"
+#        nodeAffinity:
+#          requiredDuringSchedulingIgnoredDuringExecution:
+#            nodeSelectorTerms:
+#            - matchExpressions:
+#              - key: name
+#                operator: In
+#                values:
+#                - kuber2
+#       nodeSelector:
+#         memory: 5Gb
+       containers: # CONTAINER LEVEL
+       - name: nginx
+         #image: gitlab/gitlab-ce:12.3.1-ce.0
+         image: kukudu/nginx-certbot
+         imagePullPolicy: Always
+         resources:
+           limits:
+             cpu: "2"
+             memory: "512Mi"
+           requests:
+             cpu: "1"
+             memory: "256Mi"
+         ports:
+         - containerPort: 80
+         - containerPort: 443
+         volumeMounts:
+         - mountPath: /etc/nginx/conf.d
+           name: nginx
+         - mountPath: /etc/letsencrypt
+           name: certs
+
+       volumes:
+       - name: nginx
+         hostPath:
+           path: /mnt/nfs/nginx/conf.d
+       - name: certs
+         hostPath:
+           path: /mnt/nfs/nginx/letsencrypt
